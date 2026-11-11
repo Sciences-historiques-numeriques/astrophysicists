@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LESSH Project</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; padding: 2rem; max-width: 600px; margin: 0 auto; color: #333; }
+        .hidden { display: none; }
+        h1 { color: #222; font-size: 2rem; margin-bottom: 0.5rem; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+    <script>
+        // 1. Check if the path starts with /resource (handles both "/resource" and "/resource/...")
+        const path = window.location.pathname;
+        const isValidResource = path === '/resource' || path.startsWith('/resource/');
+
+        if (isValidResource) {
+            // 2. Build destination URL and redirect instantly
+            // const targetUrl = "https://swiss-elites.lod4hss.cloud/wisski/get?uri=" + encodeURIComponent(window.location.href);
+            const targetUrl = "https://elites-suisses.lod4hss.org/sparql-queries/instance-page.html?uri=" + encodeURIComponent(window.location.href);
+            window.location.replace(targetUrl);
+        }
+    </script>
+</head>
+<body>
+    <div id="redirect-section" class="hidden">
+        <p>Redirecting to requested resource... If you are not redirected automatically, please <a id="redirect-link" href="#">click here</a>.</p>
+    </div>
+
+    <div id="error-section" class="hidden">
+        <h1>404 - Page Not Found</h1>
+        <p>The page you are looking for does not exist on this server.</p>
+        <p><a href="https://elites-suisses.lod4hss.org/">Return to the LESSH Project homepage</a></p>
+    </div>
+
+    <noscript>
+        <p><strong>Note:</strong> JavaScript is disabled in your browser. Please enable JavaScript or navigate manually to <a href="https://elites-suisses.lod4hss.org/">the LESSH Project portal</a>.</p>
+    </noscript>
+
+    <script>
+        // 3. Display the appropriate UI section based on the URL check performed in the <head>
+        if (isValidResource) {
+            document.getElementById('redirect-section').classList.remove('hidden');
+            // document.getElementById('redirect-link').href = "https://swiss-elites.lod4hss.cloud/wisski/get?uri=" + encodeURIComponent(window.location.href);
+            document.getElementById('redirect-link').href = "https://elites-suisses.lod4hss.org/sparql-queries/instance-page.html?uri=" + encodeURIComponent(window.location.href);
+        } else {
+            document.getElementById('error-section').classList.remove('hidden');
+            // Dynamically update the page title for SEO and browser tabs
+            document.title = "404 Not Found - LESSH Project";
+        }
+    </script>
+</body>
+</html>
