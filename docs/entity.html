@@ -32,9 +32,15 @@ function graphTag(r) {
   return r.graphs.length
     ? `<br/><span class="graph">${r.graphs.map(esc).join(', ')}</span>` : '';
 }
+// Link with optional rdfs:label: label as link text, IRI (short or full) in small grey text below
+function labeled(iri, labels, file = 'entity.html', full = false) {
+  const l = labels.get(iri);
+  if (!l) return iriLink(iri, full ? iri : undefined, file);
+  return `${iriLink(iri, l, file)}<br/><span class="iri">${esc(full ? iri : short(iri))}</span>`;
+}
 // asClass: object of rdf:type links to the class page
-function renderTerm(t, asClass) {
-  if (t.type === 'uri') return iriLink(t.value, t.value, asClass ? 'class.html' : 'entity.html');
+function renderTerm(t, asClass, labels) {
+  if (t.type === 'uri') return labeled(t.value, labels, asClass ? 'class.html' : 'entity.html', true);
   const lang = t['xml:lang'] ? ` <span class="lang">@${esc(t['xml:lang'])}</span>` : '';
   return `<span class="lit">${esc(t.value)}</span>${lang}`;
 }
@@ -52,22 +58,25 @@ start(async () => {
   const sel = currentSel();
   out.innerHTML = '<p class="sub">Loading…</p>';
   try {
-    const [outgoing, incoming, labels] = await Promise.all([
+    const [outgoing, incoming] = await Promise.all([
       select(`SELECT DISTINCT ?p ?o ?g WHERE { ${inGraphs(sel, `<${iri}> ?p ?o`)} } LIMIT ${LIMIT}`),
-      select(`SELECT DISTINCT ?s ?p ?g WHERE { ${inGraphs(sel, `?s ?p <${iri}>`)} } LIMIT ${LIMIT}`),
-      fetchLabels([iri])
+      select(`SELECT DISTINCT ?s ?p ?g WHERE { ${inGraphs(sel, `?s ?p <${iri}>`)} } LIMIT ${LIMIT}`)
     ]);
     const outRows = merge(outgoing, ['p', 'o']);
     const inRows = merge(incoming, ['s', 'p']);
+    // Optional labels for the entity, all predicates, URI objects and subjects
+    const labels = await fetchLabels([iri,
+      ...outRows.flatMap(r => [r.p.value, r.o.type === 'uri' ? r.o.value : null]),
+      ...inRows.flatMap(r => [r.s.value, r.p.value])]);
     const label = labels.get(iri);
     out.innerHTML = `
       <h1>${esc(label || iri)}</h1>
       <div class="sub">${label ? esc(iri) + ' · ' : ''}${esc(endpoint())}</div>
       <div class="grid">
         ${box('Outgoing', outRows, outgoing.length >= LIMIT, r =>
-          `<tr><td>${iriLink(r.p.value)}</td><td>${renderTerm(r.o, r.p.value === RDF_TYPE)}${graphTag(r)}</td></tr>`)}
+          `<tr><td>${labeled(r.p.value, labels)}</td><td>${renderTerm(r.o, r.p.value === RDF_TYPE, labels)}${graphTag(r)}</td></tr>`)}
         ${box('Incoming', inRows, incoming.length >= LIMIT, r =>
-          `<tr><td>${iriLink(r.s.value, r.s.value)}${graphTag(r)}</td><td>${iriLink(r.p.value)}</td></tr>`)}
+          `<tr><td>${labeled(r.s.value, labels, 'entity.html', true)}${graphTag(r)}</td><td>${labeled(r.p.value, labels)}</td></tr>`)}
       </div>`;
   } catch (e) {
     out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;

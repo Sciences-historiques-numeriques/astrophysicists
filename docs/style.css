@@ -46,3 +46,4 @@ th { color: var(--muted); font-weight: 600; font-size: .8rem; border-top: none; 
 .tfilter, .sfilter { width: 100%; padding: .4rem .5rem; margin-bottom: .5rem; font: inherit; font-size: .9rem;
            color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 tr[hidden] { display: none; }
+.iri { font-size: .75rem; color: var(--muted); word-break: break-all; }

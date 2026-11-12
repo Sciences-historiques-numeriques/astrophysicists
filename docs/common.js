@@ -161,7 +161,8 @@ function setAll(v) {
 /* ---------- page skeleton ---------- */
 function buildChrome(withIri) {
   $('chrome').innerHTML = `
-    <nav><a id="nav-classes" href="index.html">Classes</a></nav>
+    <nav><a id="nav-classes" href="index.html">Classes</a>
+         <a id="nav-props" href="properties.html">Properties</a></nav>
     ${withIri ? `<form id="cfg">
       <input type="text" id="iri" placeholder="Entity IRI">
       <button>Load</button>
@@ -185,6 +186,7 @@ async function refresh() {
   await loadGraphs();
   syncCheckboxes();
   $('nav-classes').href = href('index.html');
+  $('nav-props').href = href('properties.html');
   const sel = currentSel();
   if (sel && !sel.length) {
     $('out').innerHTML = '<p class="sub">No graph selected. Tick at least one graph above.</p>';

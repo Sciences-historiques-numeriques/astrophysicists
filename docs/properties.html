@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Properties – SPARQL browser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div id="chrome"></div>
+  <div id="out"></div>
+</main>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+const MAX_ROWS = 5000;
+
+start(async () => {
+  const out = $('out');
+  out.innerHTML = '<p class="sub">Loading properties…</p>';
+  try {
+    // Domain = class of the subject, range = class of the object (same graph); rdf:type itself is skipped
+    const body = `?s ?p ?o . ?s a ?dc . ` +
+                 `FILTER(isIRI(?dc) && ?p != <${RDF_TYPE}>) ` +
+                 `OPTIONAL { ?o a ?rc . FILTER(isIRI(?rc)) }`;
+    const rows = await select(
+      `SELECT ?dc ?p ?rc ?g (COUNT(*) AS ?n) WHERE { ${inGraphs(currentSel(), body)} } ` +
+      `GROUP BY ?dc ?p ?rc ?g ORDER BY ?dc ?p ?rc ?g LIMIT ${MAX_ROWS}`);
+    const labels = await fetchLabels(rows.flatMap(r => [r.dc.value, r.p.value, r.rc ? r.rc.value : null]));
+
+    // Label on top (normal size), IRI below in small grey text; without a label the IRI is shown alone.
+    // Class cells link to the class page, property cells are plain text.
+    const cell = (iri, asClass) => {
+      if (!iri) return '';
+      const l = labels.get(iri);
+      if (!l) return asClass ? iriLink(iri, iri, 'class.html') : esc(iri);
+      const top = asClass ? iriLink(iri, l, 'class.html') : esc(l);
+      return `${top}<br/><span class="iri">${esc(iri)}</span>`;
+    };
+
+    out.innerHTML = `
+      <section>
+        <h2>Properties (${rows.length}${rows.length >= MAX_ROWS ? '+' : ''} domain–property–range–graph groups)</h2>
+        ${filterInput()}
+        <table>
+          <thead><tr><th>Domain class</th><th>Property</th><th>Range class</th><th>Named graph</th><th class="num">Triples</th></tr></thead>
+          <tbody>${rows.map(r => `
+            <tr>
+              <td>${cell(r.dc.value, true)}</td>
+              <td>${cell(r.p.value, false)}</td>
+              <td>${cell(r.rc ? r.rc.value : null, true)}</td>
+              <td class="gname">${esc(r.g.value)}</td>
+              <td class="num">${Number(r.n.value).toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </section>`;
+  } catch (e) {
+    out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. This query scans all triples of the selected graphs; try selecting fewer graphs.</p>`;
+  }
+});
+</script>
+</body>
+</html>
