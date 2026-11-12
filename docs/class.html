@@ -11,17 +11,16 @@
   <div id="chrome"></div>
   <div id="out"></div>
 </main>
+<script src="config.js"></script>
 <script src="common.js"></script>
 <script>
-const PAGE_SIZE = 50;
-
 function pager(page, pages, total) {
   const a = (n, label, off) => off
     ? `<span class="off">${label}</span>`
     : `<a href="${esc(hashWith({ page: n }))}">${label}</a>`;
   return `<div class="pager">
     ${a(1, '« First', page <= 1)}${a(page - 1, '‹ Prev', page <= 1)}
-    <span>Page ${page} / ${pages} · ${total.toLocaleString()} instances</span>
+    <span>Page ${page} / ${pages} · ${total.toLocaleString()} ${param('q') ? 'matching ' : ''}instances</span>
     ${a(page + 1, 'Next ›', page >= pages)}${a(pages, 'Last »', page >= pages)}
   </div>`;
 }
@@ -35,12 +34,18 @@ start(async () => {
   }
   const page = Math.max(1, parseInt(param('page') || '1', 10) || 1);
   const sel = currentSel();
+  const q = (param('q') || '').trim();
   const body = `?s a <${cls}> . FILTER(isIRI(?s))`;
+  // Server-side filter over ALL instances: entity IRI, graph IRI or rdfs:label (any graph)
+  const qs = JSON.stringify(q.toLowerCase());
+  const where = inGraphs(sel, body) + (q ? ` FILTER(CONTAINS(LCASE(STR(?s)), ${qs}) || ` +
+    `CONTAINS(LCASE(STR(?g)), ${qs}) || EXISTS { { ?s ${LABEL_PROP} ?l } UNION ` +
+    `{ GRAPH ?lg { ?s ${LABEL_PROP} ?l } } FILTER(CONTAINS(LCASE(STR(?l)), ${qs})) })` : '');
   out.innerHTML = '<p class="sub">Loading instances…</p>';
   try {
     const [cnt, subs] = await Promise.all([
-      select(`SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ${inGraphs(sel, body)} }`),
-      select(`SELECT DISTINCT ?s WHERE { ${inGraphs(sel, body)} } ` +
+      select(`SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ${where} }`),
+      select(`SELECT DISTINCT ?s WHERE { ${where} } ` +
              `ORDER BY ?s LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`)
     ]);
     const total = Number(cnt[0] ? cnt[0].n.value : 0);
@@ -68,6 +73,8 @@ start(async () => {
       <div class="sub">${label ? esc(cls) + ' · ' : ''}${esc(endpoint())}</div>
       <section>
         ${nav}
+        <form class="qform"><input type="search" class="sfilter" name="q" value="${esc(q)}"
+          placeholder="Filter all instances (IRI, label, graph) – press Enter" aria-label="Filter instances"></form>
         <table>
           <thead><tr><th>Entity</th><th>Label</th><th>Named graph</th></tr></thead>
           <tbody>${subjects.map(s => `
@@ -83,6 +90,10 @@ start(async () => {
   } catch (e) {
     out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;
   }
+});
+$('out').addEventListener('submit', e => {
+  e.preventDefault();
+  goto({ q: e.target.q.value.trim() || null, page: null });
 });
 </script>
 </body>

@@ -1,1 +1,0 @@
-let address =  'https://sparql.geovistory.org/api_v1_project_374840' ;

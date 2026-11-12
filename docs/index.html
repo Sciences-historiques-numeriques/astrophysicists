@@ -11,6 +11,7 @@
   <div id="chrome"></div>
   <div id="out"></div>
 </main>
+<script src="config.js"></script>
 <script src="common.js"></script>
 <script>
 start(async () => {
@@ -25,6 +26,7 @@ start(async () => {
     out.innerHTML = `
       <section>
         <h2>Classes (${rows.length}${rows.length >= 5000 ? '+' : ''} class–graph groups)</h2>
+        ${filterInput()}
         <table>
           <thead><tr><th>Class</th><th>Label</th><th>Named graph</th><th class="num">Instances</th></tr></thead>
           <tbody>${rows.map(r => `

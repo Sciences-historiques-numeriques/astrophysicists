@@ -1,9 +1,7 @@
 'use strict';
+// Requires config.js (ENDPOINT, LABEL_LANGS, PAGE_SIZE) to be loaded first.
 
-/* ---------- configuration ---------- */
-const DEFAULT_ENDPOINT = '';   // e.g. 'https://example.org/sparql' (must allow CORS)
 const LABEL_PROP = '<http://www.w3.org/2000/01/rdf-schema#label>';
-const LABEL_LANGS = ['en', 'fr', 'de', ''];  // label preference; '' = untagged; other languages last
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 /* ---------- small helpers ---------- */
@@ -18,21 +16,20 @@ function short(iri) {
 }
 
 /* ---------- state ---------- */
-// Hash format: #endpoint=...&iri=...&page=...&g=<graph>&g=<graph>
+// Hash format: #iri=...&page=...&g=<graph>&g=<graph>
 //   no g param -> all graphs;  g= (empty) -> none;  g=a&g=b -> subset
-let graphList = [];        // graph IRIs of the current endpoint
-let graphEndpoint = null;  // endpoint the list belongs to
+let graphList = [];        // graph IRIs of the endpoint
+let graphsLoaded = false;
 let hashSel = null;        // selection read from the hash
 let selCache = null;       // current selection (null = all)
 let renderFn = null;
 
-const endpoint = () => $('endpoint').value.trim();
+const endpoint = () => ENDPOINT.trim();
 const hashParams = () => new URLSearchParams(location.hash.slice(1));
 const param = name => hashParams().get(name);
 
 function readHash() {
   const p = hashParams();
-  $('endpoint').value = p.get('endpoint') || $('endpoint').value;
   if ($('iri') && p.get('iri') !== null) $('iri').value = p.get('iri');
   const g = p.getAll('g');
   hashSel = !g.length ? null : (g.length === 1 && g[0] === '') ? [] : g;
@@ -51,9 +48,9 @@ function applySel(p, sel) {
   if (sel) { if (sel.length) sel.forEach(g => p.append('g', g)); else p.append('g', ''); }
 }
 
-// Link to another page, carrying endpoint + graph selection (+ extra params)
+// Link to another page, carrying the graph selection (+ extra params)
 function href(file, extra = {}) {
-  const p = new URLSearchParams({ endpoint: endpoint() });
+  const p = new URLSearchParams();
   for (const [k, v] of Object.entries(extra)) p.set(k, v);
   applySel(p, currentSel());
   return `${file}#${p}`;
@@ -61,7 +58,6 @@ function href(file, extra = {}) {
 // Hash of the current page with some params changed (null removes a param)
 function hashWith(overrides = {}) {
   const p = hashParams();
-  p.set('endpoint', endpoint());
   applySel(p, currentSel());
   for (const [k, v] of Object.entries(overrides)) v === null ? p.delete(k) : p.set(k, v);
   return '#' + p;
@@ -74,6 +70,11 @@ function goto(overrides = {}) {
 
 function iriLink(iri, label, file = 'entity.html') {
   return `<a href="${esc(href(file, { iri }))}" title="${esc(iri)}">${esc(label || short(iri))}</a>`;
+}
+
+// Filter input to put above a table; wired up by start()
+function filterInput() {
+  return '<input type="search" class="tfilter" placeholder="Filter rows…" aria-label="Filter rows">';
 }
 
 /* ---------- SPARQL ---------- */
@@ -122,9 +123,8 @@ async function fetchLabels(iris) {
 
 /* ---------- graph box ---------- */
 async function loadGraphs() {
-  const ep = endpoint();
-  if (graphEndpoint === ep) return;
-  graphEndpoint = ep;
+  if (graphsLoaded) return;
+  graphsLoaded = true;
   graphList = [];
   $('graphs-list').innerHTML = '<span class="sub">Loading graphs…</span>';
   try {
@@ -162,12 +162,10 @@ function setAll(v) {
 function buildChrome(withIri) {
   $('chrome').innerHTML = `
     <nav><a id="nav-classes" href="index.html">Classes</a></nav>
-    <form id="cfg">
-      <input type="text" id="endpoint" placeholder="SPARQL endpoint URL (must allow CORS)"
-             value="${esc(DEFAULT_ENDPOINT)}">
-      ${withIri ? '<input type="text" id="iri" placeholder="Entity IRI">' : ''}
+    ${withIri ? `<form id="cfg">
+      <input type="text" id="iri" placeholder="Entity IRI">
       <button>Load</button>
-    </form>
+    </form>` : ''}
     <details id="graphs-box">
       <summary id="graphs-summary">Graphs</summary>
       <div class="tools">
@@ -181,7 +179,7 @@ function buildChrome(withIri) {
 async function refresh() {
   readHash();
   if (!endpoint()) {
-    $('out').innerHTML = '<p class="sub">Enter a SPARQL endpoint above.</p>';
+    $('out').innerHTML = '<p class="err">No SPARQL endpoint configured. Set ENDPOINT in config.js.</p>';
     return;
   }
   await loadGraphs();
@@ -198,20 +196,28 @@ async function refresh() {
 function start(fn, opts = {}) {
   renderFn = fn;
   buildChrome(!!opts.iriField);
-  $('cfg').addEventListener('submit', e => {
-    e.preventDefault();
-    if (endpoint() !== graphEndpoint) {   // new endpoint: forget old graph selection
-      graphList = []; graphEndpoint = null;
-      $('graphs-list').innerHTML = '';
-      updateSel();
-    }
-    const o = { page: null };
-    if (opts.iriField) o.iri = $('iri').value.trim();
-    goto(o);
-  });
+  if ($('cfg')) {
+    $('cfg').addEventListener('submit', e => {
+      e.preventDefault();
+      goto({ page: null, iri: $('iri').value.trim() });
+    });
+  }
   $('graphs-list').addEventListener('change', () => { updateSel(); goto({ page: null }); });
   $('g-all').addEventListener('click', () => setAll(true));
   $('g-none').addEventListener('click', () => setAll(false));
+
+  // Row filter for every table (one input per table, matches IRI, label, graph...)
+  $('out').addEventListener('input', e => {
+    if (!e.target.classList.contains('tfilter')) return;
+    const q = e.target.value.trim().toLowerCase();
+    const section = e.target.closest('section');
+    section.querySelectorAll('tr').forEach(tr => {
+      if (!tr.querySelector('td')) return;  // keep header rows
+      const titles = [...tr.querySelectorAll('[title]')].map(a => a.title).join(' ');
+      tr.hidden = q !== '' && !(tr.textContent + ' ' + titles).toLowerCase().includes(q);
+    });
+  });
+
   window.addEventListener('hashchange', refresh);
   refresh();
 }
