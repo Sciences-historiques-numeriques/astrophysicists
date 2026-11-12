@@ -1,0 +1,68 @@
+[
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "## Queries to create the website",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Generic queries",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Map",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX sdh: <https://sdhss.org/ontology/core/>\nPREFIX crm-sup: <https://sdhss.org/ontology/crm-supplement/>\nPREFIX sdh-slc: <https://sdhss.org/ontology/social-life/>\nPREFIX sdh-short: <https://sdhss.org/ontology/shortcuts/>\nPREFIX sdh-info: <https://sdhss.org/ontology/sources-information-metadata/>\nPREFIX sdh-sls: <https://sdhss.org/ontology/social-life-specific/>\n\nSELECT ?constructionLabel ?constructionTypeLabel ?constructionGeoCoord\nWHERE {\n  ?construction a sdh:C17;\n    sdh:P107 ?geoPlace;\n    sdh:P96 ?constructionType.\n  \n  ?geoPlace sdh-short:P14 ?constructionGeoCoord.\n  \n  ?construction sdh-short:P9 ?constructionLabel.\n  ?constructionType sdh-short:P9 ?constructionTypeLabel.\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Infrastructure / construction",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX sdh: <https://sdhss.org/ontology/core/>\nPREFIX crm-sup: <https://sdhss.org/ontology/crm-supplement/>\nPREFIX sdh-slc: <https://sdhss.org/ontology/social-life/>\nPREFIX sdh-short: <https://sdhss.org/ontology/shortcuts/>\nPREFIX sdh-info: <https://sdhss.org/ontology/sources-information-metadata/>\nPREFIX sdh-sls: <https://sdhss.org/ontology/social-life-specific/>\n\nSELECT *\n## ?s ?p ?constructionLabel ?prodDate ?destDate ?constructionTypeLabel ?construction  ?constructionType\nWHERE {\n  ?construction a sdh:C17.\n  #?construction sdh-short:P9 ?constructionLabel.\n  #?constructionType sdh-short:P9 ?constructionTypeLabel.\n  \n  ?s ?p ?construction.\n  ?s ?p1 ?o1\n\n  \n  OPTIONAL {\n  ?construction sdh:P96 ?constructionType.\n\n  ?prod crm:P108 ?construction;\n      sdh-short:P1 ?prodDate.\n      \n  ?dest crm:P13 ?construction;\n      sdh-short:P1 ?destDate.\n  \n  ?construction sdh-short:P9 ?constructionLabel.\n  ?constructionType sdh-short:P9 ?constructionTypeLabel.\n}\n}\norder by ?constructionLabel",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT DISTINCT ?s ?c0 ?c1 ?c1_label ?c2 ?c3 ?c4 ?c4_label\nWHERE {\n  ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://sdhss.org/ontology/core/C17> .\n  ?s <https://sdhss.org/ontology/shortcuts/P9> ?c0 .\n  FILTER(CONTAINS(LCASE(STR(?c0)), LCASE(\"\")))\n  OPTIONAL {\n    ?s <https://sdhss.org/ontology/core/P96> ?c1 .\n    OPTIONAL {\n      ?c1 <https://sdhss.org/ontology/shortcuts/P9> ?c1_label .\n    }\n  }\n  OPTIONAL {\n    ?s ^<http://www.cidoc-crm.org/cidoc-crm/P108>/<https://sdhss.org/ontology/shortcuts/P4> ?c2 .\n  }\n  OPTIONAL {\n    ?s ^<http://www.cidoc-crm.org/cidoc-crm/P13>/<https://sdhss.org/ontology/shortcuts/P4> ?c3 .\n  }\n  OPTIONAL {\n    ?s <https://sdhss.org/ontology/core/P107> ?c4 .\n    OPTIONAL {\n      ?c4 <https://sdhss.org/ontology/shortcuts/P9> ?c4_label .\n    }\n  }\n}\nORDER BY ?c0\nLIMIT 25",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Groups",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX owl: <http://www.w3.org/2002/07/owl#>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX skos: <http://www.w3.org/2004/02/skos/core#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nPREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>\nPREFIX sdh: <https://sdhss.org/ontology/core/>\nPREFIX crm-sup: <https://sdhss.org/ontology/crm-supplement/>\nPREFIX sdh-slc: <https://sdhss.org/ontology/social-life/>\nPREFIX sdh-short: <https://sdhss.org/ontology/shortcuts/>\nPREFIX sdh-info: <https://sdhss.org/ontology/sources-information-metadata/>\nPREFIX sdh-sls: <https://sdhss.org/ontology/social-life-specific/>\n\nSELECT  ?groupLabel ?groupTypeLabel ?fondDate ?dissDate  ?group ?groupType\nWHERE {\n  ?group a crm:E74;\n    sdh:P99 ?groupType;  \n    sdh-short:P9 ?groupLabel.\n  \n  ?groupType sdh-short:P9 ?groupTypeLabel.\n\n    \n    # these properties are missing\n  OPTIONAL {\n  ?fond crm:P95 ?group;\n      sdh-short:P1 ?fondDate.\n      \n  ?diss crm:P99 ?group;\n      sdh-short:P1 ?dissDate.\n\n  }\n}",
+    "metadata": {}
+  }
+]

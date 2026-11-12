@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entity – SPARQL browser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div id="chrome"></div>
+  <div id="out"></div>
+</main>
+<script src="common.js"></script>
+<script>
+const LIMIT = 300;
+
+// Merge identical triples found in several graphs into one row with a graph list
+function merge(rows, keys) {
+  const m = new Map();
+  for (const r of rows) {
+    const k = keys.map(x => r[x].type + '|' + r[x].value + '|' +
+                            (r[x]['xml:lang'] || '') + '|' + (r[x].datatype || '')).join('||');
+    if (!m.has(k)) m.set(k, { ...r, graphs: [] });
+    const gs = m.get(k).graphs;
+    if (r.g && !gs.includes(r.g.value)) gs.push(r.g.value);
+  }
+  return [...m.values()];
+}
+function graphTag(r) {
+  return r.graphs.length
+    ? `<br/><span class="graph">${r.graphs.map(esc).join(', ')}</span>` : '';
+}
+// asClass: object of rdf:type links to the class page
+function renderTerm(t, asClass) {
+  if (t.type === 'uri') return iriLink(t.value, t.value, asClass ? 'class.html' : 'entity.html');
+  const lang = t['xml:lang'] ? ` <span class="lang">@${esc(t['xml:lang'])}</span>` : '';
+  return `<span class="lit">${esc(t.value)}</span>${lang}`;
+}
+function box(title, rows, truncated, cols) {
+  const body = rows.length
+    ? `<table class="kv">${rows.map(cols).join('')}</table>`
+    : '<p class="sub">No triples.</p>';
+  return `<section><h2>${title} (${rows.length}${truncated ? '+' : ''})</h2>${body}</section>`;
+}
+
+start(async () => {
+  const out = $('out');
+  const iri = $('iri').value.trim();
+  if (!iri) { out.innerHTML = '<p class="sub">Enter an entity IRI above, or browse the class list.</p>'; return; }
+  const sel = currentSel();
+  out.innerHTML = '<p class="sub">Loading…</p>';
+  try {
+    const [outgoing, incoming, labels] = await Promise.all([
+      select(`SELECT DISTINCT ?p ?o ?g WHERE { ${inGraphs(sel, `<${iri}> ?p ?o`)} } LIMIT ${LIMIT}`),
+      select(`SELECT DISTINCT ?s ?p ?g WHERE { ${inGraphs(sel, `?s ?p <${iri}>`)} } LIMIT ${LIMIT}`),
+      fetchLabels([iri])
+    ]);
+    const outRows = merge(outgoing, ['p', 'o']);
+    const inRows = merge(incoming, ['s', 'p']);
+    const label = labels.get(iri);
+    out.innerHTML = `
+      <h1>${esc(label || iri)}</h1>
+      <div class="sub">${label ? esc(iri) + ' · ' : ''}${esc(endpoint())}</div>
+      <div class="grid">
+        ${box('Outgoing', outRows, outgoing.length >= LIMIT, r =>
+          `<tr><td>${iriLink(r.p.value)}</td><td>${renderTerm(r.o, r.p.value === RDF_TYPE)}${graphTag(r)}</td></tr>`)}
+        ${box('Incoming', inRows, incoming.length >= LIMIT, r =>
+          `<tr><td>${iriLink(r.s.value, r.s.value)}${graphTag(r)}</td><td>${iriLink(r.p.value)}</td></tr>`)}
+      </div>`;
+  } catch (e) {
+    out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;
+  }
+}, { iriField: true });
+</script>
+</body>
+</html>

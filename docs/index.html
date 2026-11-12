@@ -1,49 +1,46 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>elites_suisses</title>
-    <style>
-        body {
-            background-color: rgb(226, 231, 235);
-        }
-
-        h1 {
-            color: rgb(22, 60, 109);
-            font-family: Arial, Helvetica, sans-serif;
-        }
-        h2 {
-            color: rgb(34, 108, 205);
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classes – SPARQL browser</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <h1>LESSH Project</h1>
-
-    Experimental website
-
-
-
-<br/>
-<br/>
-    <h2>SPARQL Live Queries</h2>
-
-
-    <ul>
-        <li><a href="./sparql-queries/persons-table.html">Persons (with search)</a></li>
-        <li><a href="./sparql-queries/groups-table.html">Organisations (with search)</a></li>
-    </ul>
-
-    <ul>    
-        <li><a href="./sparql-queries/generations.html">Distribution by Generation</a></li>
-        <li><a href="./sparql-queries/birth_places.html">Birth Places over Time</a></li>
-        
-    </ul>
-
-
+<main>
+  <div id="chrome"></div>
+  <div id="out"></div>
+</main>
+<script src="common.js"></script>
+<script>
+start(async () => {
+  const out = $('out');
+  out.innerHTML = '<p class="sub">Loading classes…</p>';
+  try {
+    const rows = await select(
+      `SELECT ?class ?g (COUNT(?s) AS ?n) WHERE { ` +
+      `${inGraphs(currentSel(), '?s a ?class . FILTER(isIRI(?class))')} } ` +
+      `GROUP BY ?class ?g ORDER BY ?class ?g LIMIT 5000`);
+    const labels = await fetchLabels(rows.map(r => r.class.value));
+    out.innerHTML = `
+      <section>
+        <h2>Classes (${rows.length}${rows.length >= 5000 ? '+' : ''} class–graph groups)</h2>
+        <table>
+          <thead><tr><th>Class</th><th>Label</th><th>Named graph</th><th class="num">Instances</th></tr></thead>
+          <tbody>${rows.map(r => `
+            <tr>
+              <td>${iriLink(r.class.value, r.class.value, 'class.html')}</td>
+              <td>${esc(labels.get(r.class.value) || '')}</td>
+              <td class="gname">${esc(r.g.value)}</td>
+              <td class="num">${Number(r.n.value).toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </section>`;
+  } catch (e) {
+    out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;
+  }
+});
+</script>
 </body>
-
 </html>

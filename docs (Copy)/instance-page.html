@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>SPARQL Triples (JSON)</title>
-  <link rel="stylesheet" href="../base_style.css">
+  <link rel="stylesheet" href="base_style.css">
 
   <!-- manages the enpoint address in just one same place-->
   <script src="address.js"></script>
@@ -69,16 +69,7 @@
         if (typeof uri !== 'string') return null;
 
         // Pattern 1: pXXXXX → /p/XXXXX
-        const pMatch = uri.match(/^https:\/\/elites-suisses.lod4hss.org\/resource\/p(\d+)$/);
-        if (pMatch) {
-          return `https://elitessuisses.unil.ch/p/${pMatch[1]}`;
-        }
-
-        // Pattern 2: oXXXX → /e/entiteXXXX
-        const gMatch = uri.match(/^https:\/\/elites-suisses.lod4hss.org\/resource\/g(\d+)$/);
-        if (gMatch) {
-          return `https://elitessuisses.unil.ch/e/entite${gMatch[1]}`;
-        }
+        const pMatch = uri.match(/^http:\/\/geovistory.org\/resource\/i(\d+)$/)
 
         // Unknown pattern
         console.warn('URI does not match known patterns:', uri);
@@ -93,7 +84,7 @@
         SELECT ?sName ?class ?classLabel ?birthYear WHERE {
           <${uri}> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?class 
           
-          OPTIONAL {<${uri}> <https://sdhss.org/ontology/shortcuts/P9> ?name .}
+          OPTIONAL {<${uri}> rdfs:label ?name .}
           OPTIONAL {?class <http://www.w3.org/2000/01/rdf-schema#label> ?sClassLabel}
           BIND (COALESCE(?name, ?sClassLabel, 'Unknown Label') AS ?sName )
           OPTIONAL { ?class rdfs:label ?classLabel }
@@ -182,7 +173,7 @@
           ?s ?p ?o.
           MINUS { ${baseFieldsGraph} {?s ?p ?o }}
           MINUS { ${originatesFromGraph} {?s ?p ?o }}          
-          OPTIONAL {?o <https://sdhss.org/ontology/shortcuts/P9> ?oName}
+          OPTIONAL {?o <http://www.w3.org/2000/01/rdf-schema#label> ?oName}
           OPTIONAL {?p <http://www.w3.org/2000/01/rdf-schema#label> ?pLbl}
           BIND (COALESCE(?pLbl, 'Unknown Label') AS ?pLabel )
           FILTER (?p != <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
@@ -225,7 +216,7 @@
           ?s ?p ?o.
           MINUS { ${baseFieldsGraph} {?s ?p ?o }}
           MINUS { ${originatesFromGraph} {?s ?p ?o }}
-          OPTIONAL {?s <https://sdhss.org/ontology/shortcuts/P9> ?sLabel}
+          OPTIONAL {?s <http://www.w3.org/2000/01/rdf-schema#label> ?sLabel}
           OPTIONAL {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?sClass.
                 ?sClass <http://www.w3.org/2000/01/rdf-schema#label> ?sClassLabel}
           BIND (COALESCE(?sLabel, ?sClassLabel, 'Unknown Label') AS ?sName )
@@ -290,7 +281,7 @@
         if (triple.o.startsWith('http')) {
           let href = triple.o;
           // If it's an internal resource, link to person-page.html
-          if (triple.o.startsWith('https://elites-suisses.lod4hss.org/resource/')) {
+          if (triple.o.startsWith('http://geovistory.org/resource/')) {
             href = `./instance-page.html?uri=${encodeURIComponent(triple.o)}`;
           }
           
@@ -331,7 +322,7 @@
         if (triple.s.startsWith('http')) {
           let href = triple.s;
           // If it's an internal resource, link to person-page.html
-          if (triple.s.startsWith('https://elites-suisses.lod4hss.org/resource/')) {
+          if (triple.s.startsWith('http://geovistory.org/resource/')) {
             href = `./instance-page.html?uri=${encodeURIComponent(triple.s)}`;
           }
           

@@ -1,0 +1,104 @@
+[
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "### Number of triples in the repo graphs\nselect ?g (count(*) as ?num)\nwhere { graph ?g {?s ?p ?o} }\ngroup by ?g",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "prefix sesame: <http://www.openrdf.org/schema/sesame#>\n\nselect (count(*) as ?n)\nwhere {\n  graph sesame:nil { ?flight ?p ?o }\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX sesame: <http://www.openrdf.org/schema/sesame#>\nDELETE WHERE {\n  GRAPH sesame:nil {\n    ?s ?p ?o\n  }\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Create the monthly phases",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "prefix sdh-act: <https://sdhss.org/ontology/human-activity/>\nprefix sdh-short: <https://sdhss.org/ontology/shortcuts/>\nprefix sdh: <https://sdhss.org/ontology/core/>\n\n\nselect ?flight_month ?number_flights  \n    ?placeLabel_from ?geocoord_from ?placeLabel_from ?place_from\n    ?placeLabel_to ?geocoord_to ?placeLabel_to ?place_to\nWHERE {\n\n{select  ?flight_month ?place_from ?place_to (count(*) as ?number_flights)\nwhere {?flight a sdh-act:C5;\n             sdh-short:P1 ?flight_date;\n             sdh:P60 ?place_from;\n             sdh:P61 ?place_to.\n       BIND(SUBSTR(?flight_date, 1, 7) AS ?flight_month)\n       \n       }\ngroup by ?flight_month ?place_from ?place_to\n}\n\n  ?place_from sdh-short:P14 ?geocoord_from.\n  ?place_from sdh-short:P9 ?placeLabel_from.\n  \n  ?place_to sdh-short:P14 ?geocoord_to.\n  ?place_to sdh-short:P9 ?placeLabel_to.\n}\norder by desc(?number_flights)\nlimit 10\n",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "prefix sesame: <http://www.openrdf.org/schema/sesame#>\n\nselect ?flight ?p ?o\nwhere {\n  graph sesame:nil { ?flight ?p ?o }\n}\norder by ?flight ?p\nlimit 10",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Get the data from agraph\n\nDid not work, security issues?\n",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT *\nWHERE {\n    SERVICE <https://lod4hss1.dh.unibe.ch/agraph/repositories/borders>  {\n    GRAPH <https://borders.lod4hss.org/graph/flights>\n    {\n        ?s ?p ?o\n    }\n}\n}\nLIMIT 10",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "CONSTRUCT {\n        ?s ?p ?o\n    }\nWHERE {\n    SERVICE <https://lod4hss1.dh.unibe.ch/agraph/repositories/borders>  {\n    GRAPH <https://borders.lod4hss.org/graph/flights>\n    {\n        ?s ?p ?o\n    }\n    }\n}\nLIMIT 5",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "INSERT {\n    GRAPH <https://borders.lod4hss.org/graph/flights>\n    {\n        ?s ?p ?o\n    }\n}\nWHERE {\n    SERVICE <https://lod4hss1.dh.unibe.ch/agraph/repositories/borders>  {\n    GRAPH <https://borders.lod4hss.org/graph/flights>\n    {\n        ?s ?p ?o\n    }\n    }\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Upload from ontop export file\n\nWorked (29 October 2026)",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "curl -u fb-write \\\n  -H \"Content-Type: application/n-quads\" \\\n  -H \"Content-Encoding: gzip\" \\\n  --data-binary @statements.nq.gz \\\n  \"https://open-gdb.lod4hss.org/repositories/astrophysicists/statements\"",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "# documentation\n\ncurl -u fb-write \\\n  -H \"Content-Type: text/turtle\" \\\n  --data-binary @statements-20261028.ttl \\\n  \"https://open-gdb.lod4hss.org/repositories/astrophysicists/statements?context=<https://borders.lod4hss.org/graph/flights>\"\n  ",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "#### Upload shacl",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "curl -u fb-write \\\n  -H \"Content-Type: text/turtle\" \\\n  --data-binary @\"shacl-Physical Human-Made Thing - Carrier's Journey ongoing.ttl\" \\\n  \"https://open-gdb.lod4hss.org/repositories/borders/statements?context=<https://borders.lod4hss.org/graph/shacl>\"\n  ",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "### Dump triplestore",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "curl -X GET \\\n  -H \"Accept: application/n-quads\" \\\n  \"https://open-gdb.lod4hss.org/repositories/borders/statements\" \\\n  -o dump.nq",
+    "metadata": {}
+  }
+]

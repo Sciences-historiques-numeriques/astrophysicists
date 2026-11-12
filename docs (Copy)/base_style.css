@@ -1,0 +1,21 @@
+    body {
+            background-color: rgb(192, 195, 201);
+        /* Center the content on the page (optional) 
+         
+        */
+        }
+
+        h1 {
+            color: rgb(42, 77, 105);
+            font-family: Arial, Helvetica, sans-serif;
+            /*
+            text-align: center;
+            */
+        }
+
+        h2 {
+            color: rgb(20, 40, 141);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: larger;
+
+        }

@@ -1,0 +1,74 @@
+[
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT *\nWHERE {\n    \n    ?s ?p ?o\n    }\n# offset 500000\nlimit 2",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT ?g (count(*) as ?n)\nWHERE {\n    GRAPH ?g {\n      ?s ?p ?o\n    }\n}\ngroup by ?g\norder by desc(?n)",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT ?g ?type (count(*) as ?eff) ?typeLabel\nWHERE {\n    graph ?g {\n    ?s a ?type\n    OPTIONAL {?type rdfs:label ?typeLabel}\n    }\n}\ngroup by ?type ?g ?typeLabel\norder by desc(?eff)\nlimit 10",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "SELECT ?g ?type (count(*) as ?eff) ?typeLabel\nWHERE {\n    graph ?g {\n    ?s ?p ?o\n    OPTIONAL {?p rdfs:label ?typeLabel}\n    }\n}\ngroup by ?type ?g ?typeLabel\norder by desc(?eff)\nlimit 10",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "## Shapes",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX sh: <http://www.w3.org/ns/shacl#>\n\n\n\n\n\nSELECT ?p  (count(*) as ?eff) WHERE {\n    graph ?g {\n    ?s a sh:NodeShape;\n      ?p ?o\n\n    }\n}\ngroup by ?p\norder by desc(?eff)\nlimit 10",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "PREFIX sh: <http://www.w3.org/ns/shacl#>\nSELECT ?s ?name\nWHERE {\n    graph ?g {\n    ?s a sh:NodeShape;\n      sh:name ?name.\n    }\n}\nORDER BY ?name\n",
+    "metadata": {}
+  },
+  {
+    "kind": 1,
+    "language": "markdown",
+    "value": "## Test data update",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "insert data {\n    graph <http://test1.org/graph1>\n    {<http://test1.org/i1> <http://test1.org/p1> <http://test1.org/i2>}\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "delete data {\n    graph <http://test1.org/graph1>\n    {<http://test1.org/i1> <http://test1.org/p1> <http://test1.org/i2>}\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "select *\nwhere {\n    BIND(<http://test1.org/graph1> as ?g)\n    graph ?g\n    {?s ?p ?o}\n}",
+    "metadata": {}
+  },
+  {
+    "kind": 2,
+    "language": "sparql",
+    "value": "",
+    "metadata": {}
+  }
+]

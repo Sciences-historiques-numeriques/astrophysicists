@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Persons</title>
-  <link rel="stylesheet" href="../base_style.css">
+  <link rel="stylesheet" href="./base_style.css">
   
   <!-- manages the enpoint address in just one same place-->
   <script src="address.js"></script>
@@ -12,8 +12,8 @@
 </head>
 <body>
   <div>
-    <h1>Swiss Elites — Persons</h1>
-    <input type="text" id="searchInput" value="Moritz">
+    <h1>HISB — Persons</h1>
+    <input type="text" id="searchInput" value="Georg">
     <div id="tableContainer">Loading data...</div>
     <div class="pagination" id="pagination"></div>
   </div>
@@ -26,15 +26,15 @@
     let allData = [];
     let currentPage = 1;
     let filteredData = [];
-    let currentSearchTerm = 'Moritz';
+    let currentSearchTerm = 'Georg';
 
     const searchInput = document.getElementById('searchInput');
     const tableContainer = document.getElementById('tableContainer');
     const paginationContainer = document.getElementById('pagination');
 
     function convertEntityURI(uri) {
-        const match = uri.match(/^https:\/\/swiss-elites.lod4hss.cloud\/resource\/p(\d+)$/);
-        if (!match) {
+        const match = uri.match(/^http:\/\/geovistory.org\/resource\/i(\d+)$/);
+        	if (!match) {
           return null;
         }
 
@@ -46,17 +46,16 @@
       const filterClause = searchTerm ? `FILTER(CONTAINS(LCASE(?name), LCASE("${searchTerm}")))` : '';
       const query = `
         prefix owl: <http://www.w3.org/2002/07/owl#>
-        prefix esr: <http://elites_suisses/resource/>
-        prefix eso: <http://elites_suisses/ontology/>
         prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         prefix crm: <http://www.cidoc-crm.org/cidoc-crm/>
         prefix sdh-short: <https://sdhss.org/ontology/shortcuts/>
+        PREFIX onto: <https://ontome.net/ontology/>
 
-        select ?s ?name ?birthYear
-        where {
-            ?s a crm:E21;
-               sdh-short:P9 ?name;
-               sdh-short:P2 ?birthYear.
+        select ?s ?name 
+                where {
+            ?s a onto:c21.
+             OPTIONAL(?s rdfs:label ?name.)
             ${filterClause}
         }
         ORDER BY ?name
@@ -94,10 +93,11 @@
 
 
       let tableHTML = `<br/>
-      <table><thead><tr><th>Forename</th><th>Birth Year</th><th>Profile</th></tr></thead><tbody>`;
+      <table><thead><tr><th>Forename</th><th>Birth Year</th></tr></thead><tbody>`;
       pageData.forEach(row => {
         tableHTML += `<tr><td><a href="./instance-page.html?uri=${escapeHtml(row.uri)}" target="_blank">${escapeHtml(row.name)}</a></td>
-          <td>${escapeHtml(row.birthYear)}</td><td><a href="${escapeHtml(convertEntityURI(row.uri) || '#')}" target="_blank">View</a></td></tr>`;
+          <td>${escapeHtml(row.birthYear)}</td>
+          </tr>`;
     });
       tableHTML += `</tbody></table>`;
       tableContainer.innerHTML = tableHTML;

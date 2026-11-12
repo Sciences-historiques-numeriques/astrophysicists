@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Triplestore</title>
+    <style>
+
+    body {
+            background-color: rgb(192, 195, 201);
+        /* Center the content on the page (optional) 
+         
+        */
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;  
+            padding: 20px; 
+            margin: 0;
+        }
+
+        h1 {
+            color: rgb(42, 77, 105);
+            font-family: Arial, Helvetica, sans-serif;
+            /*
+            text-align: center;
+            */
+        }
+
+        h2 {
+            color: rgb(20, 40, 141);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: larger;
+
+        }
+
+        /* 1. The Container: Takes up 60% of the page width */
+        .image-container {
+            width: 60%; /* Exactly 60% of the parent (page) */
+            align-items: center;
+            height: 80%;
+            
+            
+            
+            /* Option B: Aspect Ratio (e.g., 16/9) - Uncomment if preferred
+            aspect-ratio: 16 / 9; 
+            height: auto; 
+            */
+
+            overflow: hidden; /* Hides the parts of the image sticking out */
+            background-color: #ddd; /* Placeholder color while loading */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Optional shadow */
+        }
+        /* 2. The Image: Scaled to hide edges */
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures no distortion */
+            object-position: center; /* Centers the crop */
+            
+            /* Scale up to hide ~10px from all sides. 
+               You may need to adjust 1.05 slightly depending on your image resolution. */
+            transform: scale(1.05); 
+            
+            /* Smooth transition if you ever add hover effects */
+            transition: transform 0.3s ease;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>Triplestore</h1>
+
+    <div>
+        <h2>Titre</h2>
+        <p>Descriptif</p>
+        <ul>
+            <li><a href="persons-table.html" target="_blank">Persons</a></li>
+        </ul>
+    </div>
+
+
+</body>
+
+</html>
