@@ -1,5 +1,5 @@
 'use strict';
-// Requires config.js (ENDPOINT, LABEL_LANGS, PAGE_SIZE) to be loaded first.
+// Requires config.js (FIXED_TRIPLESTORE_URL, ENDPOINT, LABEL_LANGS, PAGE_SIZE) to be loaded first.
 
 const LABEL_PROP = '<http://www.w3.org/2000/01/rdf-schema#label>';
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
@@ -20,11 +20,21 @@ function short(iri) {
 //   no g param -> all graphs;  g= (empty) -> none;  g=a&g=b -> subset
 let graphList = [];        // graph IRIs of the endpoint
 let graphsLoaded = false;
+let graphCounts = new Map(); // graph IRI -> number of triples
 let hashSel = null;        // selection read from the hash
 let selCache = null;       // current selection (null = all)
 let renderFn = null;
 
-const endpoint = () => ENDPOINT.trim();
+// Endpoint: fixed in config.js, or entered on the start page and remembered in the browser
+const STORAGE_KEY = 'sparqlEndpoint';
+function endpoint() {
+  if (FIXED_TRIPLESTORE_URL) return ENDPOINT.trim();
+  try { return (localStorage.getItem(STORAGE_KEY) || ENDPOINT).trim(); }
+  catch (e) { return ENDPOINT.trim(); }
+}
+function setEndpoint(url) {
+  try { localStorage.setItem(STORAGE_KEY, url.trim()); } catch (e) { /* storage unavailable */ }
+}
 const hashParams = () => new URLSearchParams(location.hash.slice(1));
 const param = name => hashParams().get(name);
 
@@ -128,8 +138,14 @@ async function loadGraphs() {
   graphList = [];
   $('graphs-list').innerHTML = '<span class="sub">Loading graphs…</span>';
   try {
-    const rows = await select(
-      'SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } } ORDER BY ?g LIMIT 500');
+    let rows;
+    try {
+      rows = await select(
+        'SELECT ?g (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } } GROUP BY ?g ORDER BY ?g LIMIT 500');
+      rows.forEach(r => graphCounts.set(r.g.value, Number(r.n.value)));
+    } catch (e) {  // counting can time out on big stores: fall back to the plain list
+      rows = await select('SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } } ORDER BY ?g LIMIT 500');
+    }
     graphList = rows.map(r => r.g.value);
   } catch (e) {
     $('graphs-list').innerHTML =
@@ -138,7 +154,9 @@ async function loadGraphs() {
   }
   $('graphs-list').innerHTML = graphList.length
     ? graphList.map(g =>
-        `<label><input type="checkbox" value="${esc(g)}"> <span>${esc(g)}</span></label>`).join('')
+        `<label><input type="checkbox" value="${esc(g)}"> <span>${esc(g)}</span>` +
+        (graphCounts.has(g) ? `<span class="gcount">${graphCounts.get(g).toLocaleString()} triples</span>` : '') +
+        '</label>').join('')
     : '<span class="sub">No named graphs found.</span>';
 }
 
@@ -161,7 +179,8 @@ function setAll(v) {
 /* ---------- page skeleton ---------- */
 function buildChrome(withIri) {
   $('chrome').innerHTML = `
-    <nav><a id="nav-classes" href="index.html">Classes</a>
+    <nav><a href="index.html">Home</a>
+         <a id="nav-classes" href="classes.html">Classes</a>
          <a id="nav-props" href="properties.html">Properties</a></nav>
     ${withIri ? `<form id="cfg">
       <input type="text" id="iri" placeholder="Entity IRI">
@@ -180,12 +199,14 @@ function buildChrome(withIri) {
 async function refresh() {
   readHash();
   if (!endpoint()) {
-    $('out').innerHTML = '<p class="err">No SPARQL endpoint configured. Set ENDPOINT in config.js.</p>';
+    $('out').innerHTML = FIXED_TRIPLESTORE_URL
+      ? '<p class="err">No SPARQL endpoint configured. Set ENDPOINT in config.js.</p>'
+      : '<p class="err">No triplestore URL set. Enter it on the <a href="index.html">start page</a>.</p>';
     return;
   }
   await loadGraphs();
   syncCheckboxes();
-  $('nav-classes').href = href('index.html');
+  $('nav-classes').href = href('classes.html');
   $('nav-props').href = href('properties.html');
   const sel = currentSel();
   if (sel && !sel.length) {
@@ -218,6 +239,28 @@ function start(fn, opts = {}) {
       const titles = [...tr.querySelectorAll('[title]')].map(a => a.title).join(' ');
       tr.hidden = q !== '' && !(tr.textContent + ' ' + titles).toLowerCase().includes(q);
     });
+  });
+
+  // Column sort: click a th.sortable; cells carry data-v (sort key), th[data-type=num] sorts numerically
+  $('out').addEventListener('click', e => {
+    const th = e.target.closest('th.sortable');
+    if (!th) return;
+    const table = th.closest('table');
+    const idx = th.cellIndex;
+    const dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+    table.querySelectorAll('th').forEach(h => delete h.dataset.dir);
+    th.dataset.dir = dir;
+    const num = th.dataset.type === 'num';
+    const key = tr => { const c = tr.cells[idx]; return c.dataset.v !== undefined ? c.dataset.v : c.textContent.trim(); };
+    const rows = [...table.tBodies[0].rows];
+    rows.sort((a, b) => {
+      const ka = key(a), kb = key(b);
+      if (ka === '' || kb === '') return ka === kb ? 0 : ka === '' ? 1 : -1;  // empty values last
+      const c = num ? Number(ka) - Number(kb)
+                    : ka.localeCompare(kb, undefined, { numeric: true, sensitivity: 'base' });
+      return dir === 'asc' ? c : -c;
+    });
+    rows.forEach(r => table.tBodies[0].appendChild(r));
   });
 
   window.addEventListener('hashchange', refresh);

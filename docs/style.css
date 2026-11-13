@@ -47,3 +47,12 @@ th { color: var(--muted); font-weight: 600; font-size: .8rem; border-top: none; 
            color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 tr[hidden] { display: none; }
 .iri { font-size: .75rem; color: var(--muted); word-break: break-all; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable::after { content: ' \2195'; opacity: .3; }
+th.sortable[data-dir=asc]::after { content: ' \25B2'; opacity: 1; }
+th.sortable[data-dir=desc]::after { content: ' \25BC'; opacity: 1; }
+.gcount { margin-left: auto; padding-left: .5rem; color: var(--muted); white-space: nowrap; font-size: .8rem; }
+main > section { margin-bottom: 1rem; }
+.intro p { margin: .4rem 0; }
+.intro ul { margin: .4rem 0; padding-left: 1.2rem; }
+.intro li { margin: .2rem 0; }

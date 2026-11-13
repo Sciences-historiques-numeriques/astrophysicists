@@ -39,19 +39,22 @@ start(async () => {
       return `${top}<br/><span class="iri">${esc(iri)}</span>`;
     };
 
+    // Sort key: label if available, else IRI (empty for a missing range)
+    const key = iri => iri ? esc((labels.get(iri) || iri).toLowerCase()) : '';
+
     out.innerHTML = `
       <section>
         <h2>Properties (${rows.length}${rows.length >= MAX_ROWS ? '+' : ''} domain–property–range–graph groups)</h2>
         ${filterInput()}
         <table>
-          <thead><tr><th>Domain class</th><th>Property</th><th>Range class</th><th>Named graph</th><th class="num">Triples</th></tr></thead>
+          <thead><tr><th class="sortable">Domain class</th><th class="sortable">Property</th><th class="sortable">Range class</th><th>Named graph</th><th class="num sortable" data-type="num">Triples</th></tr></thead>
           <tbody>${rows.map(r => `
             <tr>
-              <td>${cell(r.dc.value, true)}</td>
-              <td>${cell(r.p.value, false)}</td>
-              <td>${cell(r.rc ? r.rc.value : null, true)}</td>
+              <td data-v="${key(r.dc.value)}">${cell(r.dc.value, true)}</td>
+              <td data-v="${key(r.p.value)}">${cell(r.p.value, false)}</td>
+              <td data-v="${key(r.rc ? r.rc.value : null)}">${cell(r.rc ? r.rc.value : null, true)}</td>
               <td class="gname">${esc(r.g.value)}</td>
-              <td class="num">${Number(r.n.value).toLocaleString()}</td>
+              <td class="num" data-v="${r.n.value}">${Number(r.n.value).toLocaleString()}</td>
             </tr>`).join('')}
           </tbody>
         </table>

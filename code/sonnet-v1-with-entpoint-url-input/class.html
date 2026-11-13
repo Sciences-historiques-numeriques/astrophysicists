@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instances – SPARQL browser</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <div id="chrome"></div>
+  <div id="out"></div>
+</main>
+<script src="common.js"></script>
+<script>
+const PAGE_SIZE = 50;
+
+function pager(page, pages, total) {
+  const a = (n, label, off) => off
+    ? `<span class="off">${label}</span>`
+    : `<a href="${esc(hashWith({ page: n }))}">${label}</a>`;
+  return `<div class="pager">
+    ${a(1, '« First', page <= 1)}${a(page - 1, '‹ Prev', page <= 1)}
+    <span>Page ${page} / ${pages} · ${total.toLocaleString()} instances</span>
+    ${a(page + 1, 'Next ›', page >= pages)}${a(pages, 'Last »', page >= pages)}
+  </div>`;
+}
+
+start(async () => {
+  const out = $('out');
+  const cls = param('iri');
+  if (!cls) {
+    out.innerHTML = `<p class="sub">No class given. Pick one from the <a href="${esc(href('index.html'))}">class list</a>.</p>`;
+    return;
+  }
+  const page = Math.max(1, parseInt(param('page') || '1', 10) || 1);
+  const sel = currentSel();
+  const body = `?s a <${cls}> . FILTER(isIRI(?s))`;
+  out.innerHTML = '<p class="sub">Loading instances…</p>';
+  try {
+    const [cnt, subs] = await Promise.all([
+      select(`SELECT (COUNT(DISTINCT ?s) AS ?n) WHERE { ${inGraphs(sel, body)} }`),
+      select(`SELECT DISTINCT ?s WHERE { ${inGraphs(sel, body)} } ` +
+             `ORDER BY ?s LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`)
+    ]);
+    const total = Number(cnt[0] ? cnt[0].n.value : 0);
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > pages) { goto({ page: pages }); return; }
+
+    const subjects = subs.map(r => r.s.value);
+    const [gRows, labels] = await Promise.all([
+      subjects.length
+        ? select(`SELECT DISTINCT ?s ?g WHERE { VALUES ?s { ${subjects.map(x => `<${x}>`).join(' ')} } ` +
+                 `${inGraphs(sel, `?s a <${cls}>`)} }`)
+        : [],
+      fetchLabels([cls, ...subjects])
+    ]);
+    const graphsOf = new Map();
+    for (const r of gRows) {
+      if (!graphsOf.has(r.s.value)) graphsOf.set(r.s.value, []);
+      graphsOf.get(r.s.value).push(r.g.value);
+    }
+
+    const label = labels.get(cls);
+    const nav = pager(page, pages, total);
+    out.innerHTML = `
+      <h1>${esc(label || cls)}</h1>
+      <div class="sub">${label ? esc(cls) + ' · ' : ''}${esc(endpoint())}</div>
+      <section>
+        ${nav}
+        <table>
+          <thead><tr><th>Entity</th><th>Label</th><th>Named graph</th></tr></thead>
+          <tbody>${subjects.map(s => `
+            <tr>
+              <td>${iriLink(s, s)}</td>
+              <td>${esc(labels.get(s) || '')}</td>
+              <td class="gname">${(graphsOf.get(s) || []).map(esc).join('<br/>')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        ${nav}
+      </section>`;
+  } catch (e) {
+    out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;
+  }
+});
+</script>
+</body>
+</html>

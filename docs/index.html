@@ -3,46 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Classes – SPARQL browser</title>
+<title>Triplestore browser</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
-  <div id="chrome"></div>
-  <div id="out"></div>
+  <h1>Triplestore browser</h1>
+  <p class="sub">Explore the data of an RDF triplestore in your browser.</p>
+
+  <!-- Shown only when FIXED_TRIPLESTORE_URL is false in config.js -->
+  <section id="connect" hidden>
+    <h2>Triplestore URL</h2>
+    <form id="cfg">
+      <input type="text" id="url" placeholder="SPARQL endpoint URL (must allow CORS)">
+      <button>Connect</button>
+    </form>
+  </section>
+  <p id="conn" class="sub"></p>
+
+  <!-- Edit the texts below to describe your own triplestore -->
+  <section class="intro">
+    <h2>What is a triplestore?</h2>
+    <p>A triplestore is a database for linked data. Instead of tables it stores statements called
+       <em>triples</em>: a subject, a predicate and an object, for example <em>a person – was born in – a city</em>.
+       Every entity, class and property is identified by a URI, and the statements can be grouped into
+       <em>named graphs</em>, for example one graph per dataset or source. The data is queried with SPARQL
+       through a SPARQL endpoint.</p>
+  </section>
+
+  <section class="intro">
+    <h2>What this site does</h2>
+    <p>This is a read-only browser: it sends SPARQL queries to the triplestore and displays the results.
+       Nothing is changed on the server.</p>
+    <ul>
+      <li><strong>Classes</strong>: the types of things in the data, with the number of instances per graph.</li>
+      <li><strong>Properties</strong>: the relations between classes, with the domain and range as used in the data.</li>
+      <li><strong>Instances</strong>: all entities of a class, paginated and searchable.</li>
+      <li><strong>Entity cards</strong>: one page per entity with its outgoing and incoming relations; every link leads to the next entity.</li>
+      <li><strong>Graphs</strong>: the list at the top of each page chooses which named graphs are queried, and follows you from page to page.</li>
+      <li><strong>Labels, filters and sorting</strong>: <code>rdfs:label</code> is shown where available, and tables can be filtered and sorted.</li>
+    </ul>
+    <p><a href="classes.html">Browse classes</a> · <a href="properties.html">Browse properties</a></p>
+  </section>
 </main>
+
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script>
-start(async () => {
-  const out = $('out');
-  out.innerHTML = '<p class="sub">Loading classes…</p>';
+const connEl = $('conn');
+
+async function check() {
+  if (!endpoint()) { connEl.textContent = 'No triplestore URL set.'; return; }
+  connEl.textContent = 'Connecting…';
   try {
-    const rows = await select(
-      `SELECT ?class ?g (COUNT(?s) AS ?n) WHERE { ` +
-      `${inGraphs(currentSel(), '?s a ?class . FILTER(isIRI(?class))')} } ` +
-      `GROUP BY ?class ?g ORDER BY ?class ?g LIMIT 5000`);
-    const labels = await fetchLabels(rows.map(r => r.class.value));
-    out.innerHTML = `
-      <section>
-        <h2>Classes (${rows.length}${rows.length >= 5000 ? '+' : ''} class–graph groups)</h2>
-        ${filterInput()}
-        <table>
-          <thead><tr><th>Class</th><th>Label</th><th>Named graph</th><th class="num">Instances</th></tr></thead>
-          <tbody>${rows.map(r => `
-            <tr>
-              <td>${iriLink(r.class.value, r.class.value, 'class.html')}</td>
-              <td>${esc(labels.get(r.class.value) || '')}</td>
-              <td class="gname">${esc(r.g.value)}</td>
-              <td class="num">${Number(r.n.value).toLocaleString()}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </section>`;
+    await select('SELECT * WHERE { ?s ?p ?o } LIMIT 1');
+    connEl.textContent = 'Connected to ' + endpoint();
   } catch (e) {
-    out.innerHTML = `<p class="err">Query failed: ${esc(e.message)}. Check the endpoint URL and its CORS headers.</p>`;
+    connEl.innerHTML = `<span class="err">Connection to ${esc(endpoint())} failed (${esc(e.message)}). ` +
+                       'Check the URL and the server\u2019s CORS headers.</span>';
   }
-});
+}
+
+if (!FIXED_TRIPLESTORE_URL) {
+  $('connect').hidden = false;
+  $('url').value = endpoint();
+  $('cfg').addEventListener('submit', e => {
+    e.preventDefault();
+    setEndpoint($('url').value);
+    check();
+  });
+}
+check();
 </script>
 </body>
 </html>

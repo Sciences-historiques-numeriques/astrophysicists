@@ -11,7 +11,6 @@
   <div id="chrome"></div>
   <div id="out"></div>
 </main>
-<script src="config.js"></script>
 <script src="common.js"></script>
 <script>
 const LIMIT = 300;
@@ -42,7 +41,7 @@ function box(title, rows, truncated, cols) {
   const body = rows.length
     ? `<table class="kv">${rows.map(cols).join('')}</table>`
     : '<p class="sub">No triples.</p>';
-  return `<section><h2>${title} (${rows.length}${truncated ? '+' : ''})</h2>${rows.length ? filterInput() : ''}${body}</section>`;
+  return `<section><h2>${title} (${rows.length}${truncated ? '+' : ''})</h2>${body}</section>`;
 }
 
 start(async () => {

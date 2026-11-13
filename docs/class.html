@@ -29,7 +29,7 @@ start(async () => {
   const out = $('out');
   const cls = param('iri');
   if (!cls) {
-    out.innerHTML = `<p class="sub">No class given. Pick one from the <a href="${esc(href('index.html'))}">class list</a>.</p>`;
+    out.innerHTML = `<p class="sub">No class given. Pick one from the <a href="${esc(href('classes.html'))}">class list</a>.</p>`;
     return;
   }
   const page = Math.max(1, parseInt(param('page') || '1', 10) || 1);
